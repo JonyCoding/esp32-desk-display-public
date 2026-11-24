@@ -1,0 +1,9 @@
+{
+  "brightness": 70,
+  "nightColor": "#2653ba",
+  "accentColor": "#ecad6f",
+  "clockColor": "#ffffff",
+  "quotaColor": "#56eaff",
+  "animationStepMs": 100,
+  "sceneDetail": 5
+}

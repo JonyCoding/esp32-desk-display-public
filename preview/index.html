@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DESK DISPLAY · 统一控制中枢</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- 顶部轻量状态栏 -->
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-icon">❖</span>
+      <div class="brand-text">
+        <h1>DESK DISPLAY</h1>
+        <span>桌面屏 · 统一控制中枢</span>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="status-chip" id="espChip">
+        <span class="indicator live" id="espLed"></span>
+        <span id="espText">实机已连接</span>
+        <span class="meta-tag" id="espHeap">115 KB 内存</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主控台区域：紧凑两栏，视野一体化，无冗余空隙 -->
+  <main class="cockpit">
+    <!-- 左栏：单一大屏幕与即时遥控器 -->
+    <section class="display-card">
+      <div class="screen-wrapper">
+        <div class="screen-bezel">
+          <div class="screw s-tl"></div><div class="screw s-tr"></div>
+          <div class="screw s-bl"></div><div class="screw s-br"></div>
+          <div class="screen-viewport">
+            <canvas id="screenCanvas" width="320" height="320"></canvas>
+            <div class="screen-scanlines"></div>
+          </div>
+        </div>
+        <div class="screen-caption">
+          <span class="res-badge">64 × 64 HUB75E</span>
+          <span class="page-badge" id="screenPageBadge">01/阁楼时钟</span>
+          <span class="mode-badge" id="screenModeBadge">WORK</span>
+        </div>
+      </div>
+
+      <!-- 屏幕亮度 + 夜间红光（实机硬件联动） -->
+      <div class="bright-bar">
+        <div class="ctrl-label">
+          <span>🔆 屏幕背光亮度 · 实机联动</span>
+          <span class="ctrl-num" id="brightNum">60 / 160</span>
+        </div>
+        <input type="range" id="brightRange" min="8" max="160" value="60" class="range-slider">
+        <div class="ctrl-label night-label">
+          <span>🌙 夜间红光模式</span>
+          <span class="ctrl-num" id="nightStatus">自动 · 22:30–06:00</span>
+        </div>
+        <div class="seg-control night-seg">
+          <button class="seg-btn active" id="nightBtn0" onclick="setNight(0)">🕐 自动</button>
+          <button class="seg-btn" id="nightBtn1" onclick="setNight(1)">🔴 强制红光</button>
+          <button class="seg-btn" id="nightBtn2" onclick="setNight(2)">🌈 强制彩色</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右栏：实机数据看板与实时调校 -->
+    <section class="control-card">
+      <!-- 面板 1：额度与硬件实时状态 -->
+      <div class="sub-panel">
+        <div class="panel-header">
+          <h3>⚡ 额度与实机状态</h3>
+          <span class="badge-time" id="ageBadge">刚刚更新</span>
+        </div>
+        <div class="quota-block">
+          <div class="hero-quota">
+            <span class="val" id="qVal">94</span><span class="unit">%</span>
+          </div>
+          <div class="quota-meta">
+            <div class="meta-row"><span>下次回满</span><strong id="refillTime">16:10</strong></div>
+            <div class="meta-row"><span>每周额度</span><strong id="weekVal">30%</strong></div>
+          </div>
+        </div>
+        <div class="stock-block" id="stockBlock">
+          <div class="stock-item">
+            <span class="s-name">上证指数 (CN)</span>
+            <strong class="s-price" id="shPrice">--</strong>
+            <span class="s-pct" id="shPct">--</span>
+          </div>
+          <div class="stock-item">
+            <span class="s-name">纳斯达克 (US)</span>
+            <strong class="s-price" id="ixicPrice">--</strong>
+            <span class="s-pct" id="ixicPct">--</span>
+          </div>
+          <div class="stock-item">
+            <span class="s-name">上金所 Au99.99 · 延时</span>
+            <strong class="s-price" id="goldPrice">--</strong>
+            <span class="s-pct">元/克</span>
+          </div>
+          <div class="stock-item">
+            <span class="s-name">国际现货 XAU/USD</span>
+            <strong class="s-price" id="goldUsdPrice">--</strong>
+            <span class="s-pct">美元/金衡盎司</span>
+          </div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <label>实机 IP</label>
+            <span id="mIp">--</span>
+          </div>
+          <div class="metric-item">
+            <label>空闲内存</label>
+            <span id="mHeap">115 KB</span>
+          </div>
+          <div class="metric-item">
+            <label>开机运行</label>
+            <span id="mUptime">--</span>
+          </div>
+          <div class="metric-item">
+            <label>工作状态</label>
+            <span id="mMode" class="highlight">WORK 模式</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 面板 2：常用场景快速预览模拟 -->
+      <div class="sub-panel compact">
+        <div class="panel-header">
+          <h3>✦ 场景模式预览</h3>
+        </div>
+        <div class="scene-chips">
+          <button class="chip active" id="chipLive" onclick="enableLiveData()">📡 实时真实数据</button>
+          <button class="chip" onclick="setPreset('work')">💼 上班工作</button>
+          <button class="chip" onclick="setPreset('afterhours')">☕ 晚间生活</button>
+          <button class="chip" onclick="setPreset('nightclock')">✦ 夜色阁楼</button>
+          <button class="chip" onclick="setPreset('offline')">⌁ 离线断网</button>
+          <span class="chip-break"></span>
+          <!-- 重力反应试看：MPU6050 还没到货也能先看五张脸 -->
+          <button class="chip" id="chipLean" onclick="previewMotion(1)">🧲 倾斜</button>
+          <button class="chip" id="chipShake" onclick="previewMotion(2)">🌀 摇晃</button>
+          <button class="chip" id="chipFlip" onclick="previewMotion(3)">🙃 倒转</button>
+          <button class="chip" id="chipTap" onclick="previewMotion(4)">👆 轻敲</button>
+          <button class="chip" id="chipDizzy" onclick="previewMotion(5)">💫 眩晕</button>
+          <button class="chip" id="chipSettle" onclick="previewMotion(6)">😮‍💨 扶正</button>
+        </div>
+        <div class="scene-jump">
+          <div class="scene-jump-heading">时钟场景直达 <span id="sceneJumpHint">仅切换本地预览</span></div>
+          <div class="scene-chips">
+            <button class="chip loft-scene-chip active" data-scene="-1" onclick="selectLoftScene(-1)">跟随页面</button>
+            <button class="chip loft-scene-chip" data-scene="0" onclick="selectLoftScene(0)">阁楼</button>
+            <button class="chip loft-scene-chip" data-scene="1" onclick="selectLoftScene(1)">近地空间站</button>
+            <button class="chip loft-scene-chip" data-scene="2" onclick="selectLoftScene(2)">咖啡角</button>
+            <button class="chip loft-scene-chip" data-scene="3" onclick="selectLoftScene(3)">月面基地</button>
+            <button class="chip loft-scene-chip" data-scene="4" onclick="selectLoftScene(4)">书房</button>
+            <button class="chip loft-scene-chip" data-scene="5" onclick="selectLoftScene(5)">星环火箭</button>
+            <button class="chip loft-scene-chip" data-scene="6" onclick="selectLoftScene(6)">和室</button>
+            <button class="chip loft-scene-chip" data-scene="7" onclick="selectLoftScene(7)">太空舱</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 面板 3：阁楼时钟墨色（点圆点＝固定，自动＝继续轮换；实机与预览同时换） -->
+      <div class="sub-panel compact">
+        <div class="panel-header">
+          <h3>🎨 阁楼时钟墨色</h3>
+          <span class="badge-time" id="inkStatus">自动 · 回来就换色</span>
+        </div>
+        <div class="ink-row">
+          <button class="ink-btn active" id="inkAuto" onclick="setInk('auto')">自动</button>
+          <button class="ink-btn" onclick="setInk('next')">换一个</button>
+          <div class="ink-dots">
+            <button class="ink-dot" style="background:#ffffff" onclick="setInk('#ffffff')" title="纯白"></button>
+            <button class="ink-dot" style="background:#4a659c" onclick="setInk('#4a659c')" title="雾蓝"></button>
+            <button class="ink-dot" style="background:#9ad0ff" onclick="setInk('#9ad0ff')" title="冰蓝"></button>
+            <button class="ink-dot" style="background:#ffd28a" onclick="setInk('#ffd28a')" title="暖琥珀"></button>
+            <button class="ink-dot" style="background:#a8e6c8" onclick="setInk('#a8e6c8')" title="薄荷"></button>
+            <button class="ink-dot" style="background:#ffa8c8" onclick="setInk('#ffa8c8')" title="玫瑰"></button>
+            <button class="ink-dot" style="background:#c9b8ff" onclick="setInk('#c9b8ff')" title="薰衣草"></button>
+            <button class="ink-dot" style="background:#ff9a6b" onclick="setInk('#ff9a6b')" title="珊瑚"></button>
+            <button class="ink-dot" style="background:#8fe3ff" onclick="setInk('#8fe3ff')" title="青蓝"></button>
+            <button class="ink-dot" style="background:#ffe066" onclick="setInk('#ffe066')" title="金"></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 底部遥控条：跟随/锁定 + 四页直控（整宽一行排开） -->
+    <section class="control-strip">
+      <div class="strip-row">
+        <div class="seg-control">
+          <button class="seg-btn active" id="segFollow" onclick="segFollow()">🔄 跟随实机轮播</button>
+          <button class="seg-btn" id="segLock" onclick="segLock()">🔒 手动锁定</button>
+        </div>
+        <div class="seg-status" id="segStatus">实机展示中 · 网页同步跟随</div>
+      </div>
+      <div class="remote-grid">
+        <button class="remote-btn" id="rBtn0" onclick="sendPage(0, 'loft')">
+          <span class="icon">🏠</span>
+          <div class="btn-info">
+            <strong>01 阁楼时钟</strong>
+            <small>大字时间 · 猫咪窗景</small>
+          </div>
+        </button>
+        <button class="remote-btn active" id="rBtn1" onclick="sendPage(1, 'quota')">
+          <span class="icon">⚡</span>
+          <div class="btn-info">
+            <strong>02 能量额度</strong>
+            <small>5H 余量 · 回满倒计时</small>
+          </div>
+        </button>
+        <button class="remote-btn" id="rBtn2" onclick="sendPage(2, 'status')">
+          <span class="icon">⚙</span>
+          <div class="btn-info">
+            <strong>03 系统状态</strong>
+            <small>IP 地址 · 运行诊断</small>
+          </div>
+        </button>
+        <button class="remote-btn" id="rBtn3" onclick="sendPage(3, 'stock')">
+          <span class="icon">📈</span>
+          <div class="btn-info">
+            <strong>04 股票行情</strong>
+            <small>上证 · 纳指 · 走势曲线</small>
+          </div>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
